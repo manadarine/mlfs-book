@@ -15,13 +15,14 @@ import hopsworks
 import hsfs
 from pathlib import Path
 
+
 def get_historical_weather(city, start_date,  end_date, latitude, longitude):
     # latitude, longitude = get_city_coordinates(city)
 
     # Setup the Open-Meteo API client with cache and retry on error
-    cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
-    retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
-    openmeteo = openmeteo_requests.Client(session = retry_session)
+    cache_session = requests_cache.CachedSession('.cache', expire_after=-1)
+    retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+    openmeteo = openmeteo_requests.Client(session=retry_session)
 
     # Make sure all required weather variables are listed here
     # The order of variables in hourly or daily is important to assign them correctly below
@@ -50,29 +51,30 @@ def get_historical_weather(city, start_date,  end_date, latitude, longitude):
     daily_wind_direction_10m_dominant = daily.Variables(3).ValuesAsNumpy()
 
     daily_data = {"date": pd.date_range(
-        start = pd.to_datetime(daily.Time(), unit = "s"),
-        end = pd.to_datetime(daily.TimeEnd(), unit = "s"),
-        freq = pd.Timedelta(seconds = daily.Interval()),
-        inclusive = "left"
+        start=pd.to_datetime(daily.Time(), unit="s"),
+        end=pd.to_datetime(daily.TimeEnd(), unit="s"),
+        freq=pd.Timedelta(seconds=daily.Interval()),
+        inclusive="left"
     )}
     daily_data["temperature_2m_mean"] = daily_temperature_2m_mean
     daily_data["precipitation_sum"] = daily_precipitation_sum
     daily_data["wind_speed_10m_max"] = daily_wind_speed_10m_max
     daily_data["wind_direction_10m_dominant"] = daily_wind_direction_10m_dominant
 
-    daily_dataframe = pd.DataFrame(data = daily_data)
+    daily_dataframe = pd.DataFrame(data=daily_data)
     daily_dataframe = daily_dataframe.dropna()
     daily_dataframe['city'] = city
     return daily_dataframe
+
 
 def get_hourly_weather_forecast(city, latitude, longitude):
 
     # latitude, longitude = get_city_coordinates(city)
 
     # Setup the Open-Meteo API client with cache and retry on error
-    cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
-    retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
-    openmeteo = openmeteo_requests.Client(session = retry_session)
+    cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
+    retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+    openmeteo = openmeteo_requests.Client(session=retry_session)
 
     # Make sure all required weather variables are listed here
     # The order of variables in hourly or daily is important to assign them correctly below
@@ -100,20 +102,19 @@ def get_hourly_weather_forecast(city, latitude, longitude):
     hourly_wind_direction_10m = hourly.Variables(3).ValuesAsNumpy()
 
     hourly_data = {"date": pd.date_range(
-        start = pd.to_datetime(hourly.Time(), unit = "s"),
-        end = pd.to_datetime(hourly.TimeEnd(), unit = "s"),
-        freq = pd.Timedelta(seconds = hourly.Interval()),
-        inclusive = "left"
+        start=pd.to_datetime(hourly.Time(), unit="s"),
+        end=pd.to_datetime(hourly.TimeEnd(), unit="s"),
+        freq=pd.Timedelta(seconds=hourly.Interval()),
+        inclusive="left"
     )}
     hourly_data["temperature_2m_mean"] = hourly_temperature_2m
     hourly_data["precipitation_sum"] = hourly_precipitation
     hourly_data["wind_speed_10m_max"] = hourly_wind_speed_10m
     hourly_data["wind_direction_10m_dominant"] = hourly_wind_direction_10m
 
-    hourly_dataframe = pd.DataFrame(data = hourly_data)
+    hourly_dataframe = pd.DataFrame(data=hourly_data)
     hourly_dataframe = hourly_dataframe.dropna()
     return hourly_dataframe
-
 
 
 def get_city_coordinates(city_name: str):
@@ -129,7 +130,8 @@ def get_city_coordinates(city_name: str):
 
     return latitude, longitude
 
-def trigger_request(url:str):
+
+def trigger_request(url: str):
     response = requests.get(url)
     if response.status_code == 200:
         # Extract the JSON content from the response
@@ -160,7 +162,6 @@ def get_pm25(aqicn_url: str, country: str, city: str, street: str, day: datetime
         url2 = f"https://api.waqi.info/feed/{country}/{city}/{street}/?token={AQI_API_KEY}"
         data = trigger_request(url2)
 
-
     # Check if the API response contains the data
     if data['status'] == 'ok':
         # Extract the air quality data
@@ -176,7 +177,8 @@ def get_pm25(aqicn_url: str, country: str, city: str, street: str, day: datetime
         aq_today_df['date'] = pd.to_datetime(aq_today_df['date'])
         aq_today_df['url'] = aqicn_url
     else:
-        print("Error: There may be an incorrect  URL for your Sensor or it is not contactable right now. The API response does not contain data.  Error message:", data['data'])
+        print(
+            "Error: There may be an incorrect  URL for your Sensor or it is not contactable right now. The API response does not contain data.  Error message:", data['data'])
         raise requests.exceptions.RequestException(data['data'])
 
     return aq_today_df
@@ -187,7 +189,8 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
 
     day = pd.to_datetime(df['date']).dt.date
     # Plot each column separately in matplotlib
-    ax.plot(day, df['predicted_pm25'], label='Predicted PM2.5', color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
+    ax.plot(day, df['predicted_pm25'], label='Predicted PM2.5', color='red',
+            linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
 
     # Set the y-axis to a logarithmic scale
     ax.set_yscale('log')
@@ -201,14 +204,18 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     ax.set_ylabel('PM2.5')
 
     colors = ['green', 'yellow', 'orange', 'red', 'purple', 'darkred']
-    labels = ['Good', 'Moderate', 'Unhealthy for Some', 'Unhealthy', 'Very Unhealthy', 'Hazardous']
-    ranges = [(0, 49), (50, 99), (100, 149), (150, 199), (200, 299), (300, 500)]
+    labels = ['Good', 'Moderate', 'Unhealthy for Some',
+              'Unhealthy', 'Very Unhealthy', 'Hazardous']
+    ranges = [(0, 49), (50, 99), (100, 149),
+              (150, 199), (200, 299), (300, 500)]
     for color, (start, end) in zip(colors, ranges):
         ax.axhspan(start, end, color=color, alpha=0.3)
 
     # Add a legend for the different Air Quality Categories
-    patches = [Patch(color=colors[i], label=f"{labels[i]}: {ranges[i][0]}-{ranges[i][1]}") for i in range(len(colors))]
-    legend1 = ax.legend(handles=patches, loc='upper right', title="Air Quality Categories", fontsize='x-small')
+    patches = [Patch(
+        color=colors[i], label=f"{labels[i]}: {ranges[i][0]}-{ranges[i][1]}") for i in range(len(colors))]
+    legend1 = ax.legend(handles=patches, loc='upper right',
+                        title="Air Quality Categories", fontsize='x-small')
 
     # Aim for ~10 annotated values on x-axis, will work for both forecasts ans hindcasts
     if len(df.index) > 11:
@@ -218,7 +225,8 @@ def plot_air_quality_forecast(city: str, street: str, df: pd.DataFrame, file_pat
     plt.xticks(rotation=45)
 
     if hindcast == True:
-        ax.plot(day, df['pm25'], label='Actual PM2.5', color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
+        ax.plot(day, df['pm25'], label='Actual PM2.5', color='black',
+                linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
         legend2 = ax.legend(loc='upper left', fontsize='x-small')
         ax.add_artist(legend1)
 
@@ -238,6 +246,7 @@ def delete_feature_groups(fs, name):
     except hsfs.client.exceptions.RestAPIError:
         print(f"No {name} feature group found")
 
+
 def delete_feature_views(fs, name):
     try:
         for fv in fs.get_feature_views(name):
@@ -246,6 +255,7 @@ def delete_feature_views(fs, name):
     except hsfs.client.exceptions.RestAPIError:
         print(f"No {name} feature view found")
 
+
 def delete_models(mr, name):
     models = mr.get_models(name)
     if not models:
@@ -253,6 +263,7 @@ def delete_models(mr, name):
     for model in models:
         model.delete()
         print(f"Deleted model {model.name}/{model.version}")
+
 
 def delete_secrets(proj, name):
     secrets = secrets_api(proj.name)
@@ -264,12 +275,14 @@ def delete_secrets(proj, name):
         print(f"No {name} secret found")
 
 # WARNING - this will wipe out all your feature data and models
+
+
 def purge_project(proj):
     fs = proj.get_feature_store()
     mr = proj.get_model_registry()
 
     # Delete Feature Views before deleting the feature groups
-    delete_feature_views(fs, "air_quality_fv")
+    delete_feature_views(fs, "air_qual_fv")
 
     # Delete ALL Feature Groups
     delete_feature_groups(fs, "air_quality")
@@ -280,6 +293,7 @@ def purge_project(proj):
     delete_models(mr, "air_quality_xgboost_model")
     delete_secrets(proj, "SENSOR_LOCATION_JSON")
 
+
 def check_file_path(file_path):
     my_file = Path(file_path)
     if my_file.is_file() == False:
@@ -287,12 +301,15 @@ def check_file_path(file_path):
     else:
         print(f"File successfully found at the path: {file_path}")
 
+
 def backfill_predictions_for_monitoring(weather_fg, air_quality_df, monitor_fg, model):
     features_df = weather_fg.read()
     features_df = features_df.sort_values(by=['date'], ascending=True)
     features_df = features_df.tail(10)
-    features_df['predicted_pm25'] = model.predict(features_df[['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']])
-    df = pd.merge(features_df, air_quality_df[['date','pm25','street','country']], on="date")
+    features_df['predicted_pm25'] = model.predict(
+        features_df[['temperature_2m_mean', 'precipitation_sum', 'wind_speed_10m_max', 'wind_direction_10m_dominant']])
+    df = pd.merge(features_df, air_quality_df[[
+                  'date', 'pm25', 'street', 'country']], on="date")
     df['days_before_forecast_day'] = 1
     hindcast_df = df
     df = df.drop('pm25', axis=1)

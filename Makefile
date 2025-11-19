@@ -51,8 +51,31 @@ cc-all: cc-datagen cc-features cc-streaming-features cc-train cc-deploy
 aq-clean:
 	python mlfs/clean_hopsworks_resources.py aq
 
-aq-features:
-	ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb
+aq-features: $(addprefix run-, $(shell seq 1 $(NUM_ITEMS)))
+
+# Rule for each index
+# Use secondary expansion to evaluate word function with the index
+run-%:
+	@idx=$*; \
+	csv=$(word $*, $(CSV_PATH)); \
+	url=$(word $*, $(AQICN_URLS)); \
+	country=$(word $*, $(AQICN_COUNTRY)); \
+	city=$(word $*, $(AQICN_CITY)); \
+	street=$(word $*, $(AQICN_STREET)); \
+	latitude=$(word $*, $(LATITUDE)); \
+	longitude=$(word $*, $(LONGITUDE)); \
+	today=$(TODAY); \
+	echo "Running index $$idx:"; \
+	echo "  CSV      = $$csv"; \
+	echo "  URL      = $$url"; \
+	echo "  COUNTRY  = $$country"; \
+	echo "  CITY     = $$city"; \
+	echo "  STREET   = $$street"; \
+	echo "  LATITUDE = $$latitude"; \
+	echo "  LONGITUDE = $$longitude"; \
+	time ipython notebooks/airquality/1_air_quality_feature_backfill.ipynb \
+		"$$csv" "$$url" "$$country" "$$city" "$$street" "$$latitude" "$$longitude" "$$today"
+
 
 aq-train:
 	ipython notebooks/airquality/3_air_quality_training_pipeline.ipynb
@@ -81,3 +104,25 @@ titanic-inference:
 
 titanic-all: titanic-features titanic-train titanic-inference
 
+# Compute list length (all lists assumed equal length)
+# NUM_ITEMS := $(words $(CSV_PATH))
+NUM_ITEMS := 1
+
+CSV_PATH := air-quality-data-holmsjo.csv \
+            air-quality-data-vaxjo.csv \
+            air-quality-data-tingsryds-kommun.csv \
+            air-quality-data-vaxjovagen.csv \
+            air-quality-data-klackens-ostergrand.csv
+
+AQICN_URLS := https://api.waqi.info/feed/A59899 \
+              https://api.waqi.info/feed/A63646 \
+              https://api.waqi.info/feed/A59650 \
+              https://api.waqi.info/feed/A61867 \
+              https://api.waqi.info/feed/A415030
+
+AQICN_COUNTRY := sweden sweden sweden sweden sweden
+AQICN_CITY    := karlskrona kronoberg tingsryds-kommun växjövägen klackens-östergränd
+AQICN_STREET  := holmsjö vaxjo g-651 växjövägen klackens-östergränd
+LATITUDE      := 56.1617 56.8937 56.5240 56.8777 56.8874
+LONGITUDE     := 15.5865 14.8091 14.9737 14.8094 14.8198
+TODAY = $$(date '+%Y-%m-%d')

@@ -27,9 +27,9 @@ def connect_to_hopsworks():
     # Retrieve the model registry
     mr = project.get_model_registry()
 
-    # Retrieve the 'air_quality_fv' feature view
+    # Retrieve the 'air_qual_fv' feature view
     feature_view = fs.get_feature_view(
-        name="air_quality_fv",
+        name="air_qual_fv",
         version=2,
     )
 
@@ -89,14 +89,16 @@ new_response_source = st.sidebar.radio(
 # If the user switches the response generation method, clear the chat
 if new_response_source != st.session_state.response_source:
     st.session_state.messages = []  # Clear previous chat messages
-    st.session_state.response_source = new_response_source  # Update response source in session state
+    # Update response source in session state
+    st.session_state.response_source = new_response_source
 
     # Display a message indicating chat was cleared (optional)
     st.experimental_rerun()  # Rerun the app to reflect changes immediately
 
 
 if new_response_source == 'OpenAI API':
-    openai_api_key = st.sidebar.text_input("Enter your OpenAI API key:", type="password")
+    openai_api_key = st.sidebar.text_input(
+        "Enter your OpenAI API key:", type="password")
     if openai_api_key:
         client = OpenAI(
             api_key=openai_api_key
@@ -149,4 +151,5 @@ if user_query := st.chat_input("How can I help you?"):
     with st.chat_message("assistant"):
         st.markdown(response)
     # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response})

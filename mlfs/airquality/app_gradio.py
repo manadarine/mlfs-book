@@ -12,7 +12,9 @@ from functions.llm_chain import (
     generate_response_openai,
 )
 # Initialize the ASR pipeline
-transcriber = pipeline("automatic-speech-recognition", model="openai/whisper-base.en")
+transcriber = pipeline("automatic-speech-recognition",
+                       model="openai/whisper-base.en")
+
 
 def connect_to_hopsworks():
     # Initialize Hopsworks feature store connection
@@ -22,11 +24,11 @@ def connect_to_hopsworks():
     # Retrieve the model registry
     mr = project.get_model_registry()
 
-    # Retrieve the 'air_quality_fv' feature view
+    # Retrieve the 'air_qual_fv' feature view
     feature_view = fs.get_feature_view(
-        name="air_quality_fv",
+        name="air_qual_fv",
         version=1,
-        )
+    )
 
     # Initialize batch scoring
     feature_view.init_batch_scoring(1)
@@ -56,8 +58,10 @@ def retrieve_llm_chain():
     )
     return model_llm, tokenizer, llm_chain
 
+
 # Setup the models and feature view
 feature_view, model_air_quality = connect_to_hopsworks()
+
 
 def transcribe(audio):
     sr, y = audio
@@ -117,14 +121,17 @@ def handle_input(text_input=None, audio_input=None, method='Hermes LLM', openai_
     else:
         return "Please provide input either via text or voice."
 
+
 # Setting up the Gradio Interface
 iface = gr.Interface(
     fn=handle_input,
     inputs=[
         gr.Textbox(placeholder="Type here or use voice input..."),
         gr.Audio(),
-        gr.Radio(["Hermes LLM", "OpenAI API"], label="Choose the response generation method"),
-        gr.Textbox(label="Enter your OpenAI API key (only if you selected OpenAI API):", type="password")  # Removed `optional=True`
+        gr.Radio(["Hermes LLM", "OpenAI API"],
+                 label="Choose the response generation method"),
+        gr.Textbox(label="Enter your OpenAI API key (only if you selected OpenAI API):",
+                   type="password")  # Removed `optional=True`
     ],
     outputs="text",
     title="🌤️ AirQuality AI Assistant 💬",
